@@ -1,3 +1,5 @@
+%global optflags %{optflags} -flto
+%global build_ldflags %{build_ldflags} -flto
 %global _qt5_optflags %{_qt5_optflags} $(pkg-config --cflags libavcodec)
 # -I/usr/include/ffmpeg
 # $(pkg-config --cflags libavcodec)
@@ -64,7 +66,11 @@ sed -i '/qlite_pkg $build_dir $install_dir/d' MEGASync/mega/contrib/build_sdk.sh
 
 
 %build
-export DESKTOP_DESTDIR=$RPM_BUILD_ROOT/usr
+export AR=%{_bindir}/gcc-ar
+export RANLIB=%{_bindir}/gcc-ranlib
+export NM=%{_bindir}/gcc-nm
+
+export DESKTOP_DESTDIR=%{buildroot}%{_prefix}
 
 ./configure -i -z
 
@@ -83,13 +89,14 @@ desktop-file-install \
     --dir %{buildroot}%{_datadir}/applications \
 %{buildroot}%{_datadir}/applications/%{name}.desktop
 
+rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
+
 %files
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
-%{_datadir}/icons/hicolor/*/*/mega.png
-%{_datadir}/icons/hicolor/*/*/*
-%{_datadir}/icons/*/*/*/*
-%{_datadir}/doc/megasync
+%{_datadir}/icons/hicolor/*/apps/mega.png
+%{_datadir}/icons/hicolor/scalable/status/*.svg
+%{_datadir}/doc/%{name}
 
 %changelog
 * Fri Apr 19 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-1
