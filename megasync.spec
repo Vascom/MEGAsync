@@ -77,42 +77,19 @@ lrelease-qt5 MEGASync/MEGASync.pro
 
 %install
 make install DESTDIR=%{buildroot}%{_bindir}
-#mkdir -p %{buildroot}%{_datadir}/applications
-#%{__install} MEGAsync/platform/linux/data/megasync.desktop -D %{buildroot}%{_datadir}/applications
 
 desktop-file-install \
     --add-category="Network" \
     --dir %{buildroot}%{_datadir}/applications \
 %{buildroot}%{_datadir}/applications/%{name}.desktop
 
-mkdir -p  %{buildroot}/etc/sysctl.d/
-echo "fs.inotify.max_user_watches = 524288" > %{buildroot}/etc/sysctl.d/100-megasync-inotify-limit.conf
-
-%post
-sysctl -p /etc/sysctl.d/100-megasync-inotify-limit.conf
-
-
-%postun
-if [ $1 -eq 0 ] ; then
-    /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
-    /bin/touch --no-create %{_datadir}/icons/ubuntu-mono-dark &>/dev/null || :
-    /usr/bin/gtk-update-icon-cache %{_datadir}/icons/* &>/dev/null || :
-fi
-
-
-# kill running MEGAsync instance
-killall megasync 2> /dev/null || true
-
-
 %files
 %{_bindir}/%{name}
-%{_datadir}/applications/megasync.desktop
+%{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/*/mega.png
 %{_datadir}/icons/hicolor/*/*/*
 %{_datadir}/icons/*/*/*/*
 %{_datadir}/doc/megasync
-%{_datadir}/doc/megasync/*
-/etc/sysctl.d/100-megasync-inotify-limit.conf
 
 %changelog
 * Fri Apr 19 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-1
