@@ -13,6 +13,8 @@ Url:        https://mega.nz
 Source0:    megasync_%{version}.tar.gz
 # Source0:    https://github.com/meganz/MEGAsync/archive/v%{version}.0_Linux.tar.gz
 
+ExcludeArch: %power64 aarch64
+
 BuildRequires: openssl-devel
 BuildRequires: sqlite-devel
 BuildRequires: zlib-devel
