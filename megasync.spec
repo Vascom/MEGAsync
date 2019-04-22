@@ -9,30 +9,30 @@ URL:        https://mega.nz
 Source0:    https://github.com/meganz/MEGAsync/archive/v%{version}.0_Linux.tar.gz
 Source1:    https://github.com/meganz/sdk/archive/v%{sdk_version}.tar.gz
 
-BuildRequires: openssl-devel
-BuildRequires: sqlite-devel
-BuildRequires: zlib-devel
-BuildRequires: automake
-BuildRequires: libtool
-BuildRequires: gcc-c++
-BuildRequires: unzip
-BuildRequires: wget
-BuildRequires: ffmpeg-devel
-BuildRequires: bzip2-devel
-BuildRequires: libzen-devel
-BuildRequires: libmediainfo-devel
-BuildRequires: c-ares-devel
-BuildRequires: cryptopp-devel >= 5.6.5
-BuildRequires: desktop-file-utils
-BuildRequires: qt5-qtbase-devel >= 5.6
-BuildRequires: qt5-qttools-devel
-BuildRequires: qt5-qtsvg-devel
-BuildRequires: terminus-fonts
-BuildRequires: fontpackages-filesystem
-BuildRequires: LibRaw-devel
-BuildRequires: libsodium-devel
-BuildRequires: libuv-devel
-BuildRequires: sqlite-devel
+ExcludeArch:    %power64 aarch64
+
+BuildRequires:  openssl-devel
+BuildRequires:  sqlite-devel
+BuildRequires:  zlib-devel
+BuildRequires:  automake
+BuildRequires:  libtool
+BuildRequires:  gcc-c++
+BuildRequires:  wget
+BuildRequires:  ffmpeg-devel
+BuildRequires:  bzip2-devel
+BuildRequires:  libmediainfo-devel
+BuildRequires:  c-ares-devel
+BuildRequires:  cryptopp-devel >= 5.6.5
+BuildRequires:  desktop-file-utils
+BuildRequires:  qt5-qtbase-devel >= 5.6
+BuildRequires:  qt5-qttools-devel
+BuildRequires:  qt5-qtsvg-devel
+BuildRequires:  terminus-fonts
+BuildRequires:  fontpackages-filesystem
+BuildRequires:  LibRaw-devel
+BuildRequires:  libsodium-devel
+BuildRequires:  libuv-devel
+BuildRequires:  sqlite-devel
 
 Requires:       hicolor-icon-theme
 
