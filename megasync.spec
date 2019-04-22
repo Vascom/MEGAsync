@@ -1,30 +1,23 @@
-%global optflags %{optflags} -flto
-%global build_ldflags %{build_ldflags} -flto
-%global _qt5_optflags %{_qt5_optflags} $(pkg-config --cflags libavcodec)
-# -I/usr/include/ffmpeg
-# $(pkg-config --cflags libavcodec)
+%global sdk_version 3.4.7
 
 Name:       megasync
 Version:    4.0.2
-Release:    1%{?dist}
+Release:    2%{?dist}
 Summary:    Easy automated syncing between your computers and your MEGA cloud drive
-License:    Freeware
-Url:        https://mega.nz
-Source0:    megasync_%{version}.tar.gz
-# Source0:    https://github.com/meganz/MEGAsync/archive/v%{version}.0_Linux.tar.gz
-
-ExcludeArch: %power64 aarch64
+License:    BSD
+URL:        https://mega.nz
+Source0:    https://github.com/meganz/MEGAsync/archive/v%{version}.0_Linux.tar.gz
+Source1:    https://github.com/meganz/sdk/archive/v%{sdk_version}.tar.gz
 
 BuildRequires: openssl-devel
 BuildRequires: sqlite-devel
 BuildRequires: zlib-devel
-BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
 BuildRequires: gcc-c++
-BuildRequires: hicolor-icon-theme, unzip, wget
+BuildRequires: unzip
+BuildRequires: wget
 BuildRequires: ffmpeg-devel
-BuildRequires: pkgconfig
 BuildRequires: bzip2-devel
 BuildRequires: libzen-devel
 BuildRequires: libmediainfo-devel
@@ -41,6 +34,7 @@ BuildRequires: libsodium-devel
 BuildRequires: libuv-devel
 BuildRequires: sqlite-devel
 
+Requires:       hicolor-icon-theme
 
 %description
 Secure:
@@ -59,41 +53,56 @@ Generous:
 Store up to 50 GB for free!
 
 %prep
-%autosetup
-rm -rf archives
+%autosetup -n MEGAsync-%{version}.0_Linux
 
-sed -i '/-u/d' configure
-sed -i 's/-v/-y/' configure
-sed -i '/qlite_pkg $build_dir $install_dir/d' MEGASync/mega/contrib/build_sdk.sh
+#Move Mega SDK to it's place
+tar -xvf %{SOURCE1} -C src/MEGASync/mega
+mv src/MEGASync/mega/sdk-%{sdk_version}/* src/MEGASync/mega/
+
+#Disable all bundling
+sed -i '/-u/d' src/configure
+sed -i 's/-v/-y/' src/configure
+sed -i '/qlite_pkg $build_dir $install_dir/d' src/MEGASync/mega/contrib/build_sdk.sh
 
 
 %build
-export AR=%{_bindir}/gcc-ar
-export RANLIB=%{_bindir}/gcc-ranlib
-export NM=%{_bindir}/gcc-nm
+#Enable LTO optimisation and FFMPEG
+echo "CONFIG += link_pkgconfig
+PKGCONFIG += libavcodec
+QMAKE_CXXFLAGS += -flto
+QMAKE_CFLAGS += -flto
+QMAKE_LFLAGS_RELEASE += -flto" >> src/MEGASync/MEGASync.pro
 
 export DESKTOP_DESTDIR=%{buildroot}%{_prefix}
 
-./configure -i -z
+pushd src
+    ./configure -i -z
 
-%define fullreqs "CONFIG += FULLREQUIREMENTS"
+    %qmake_qt5 \
+        "CONFIG += FULLREQUIREMENTS" \
+        DESTDIR=%{buildroot}%{_bindir} \
+        THE_RPM_BUILD_ROOT=%{buildroot}
+    lrelease-qt5 MEGASync/MEGASync.pro
 
-%qmake_qt5 %{fullreqs} DESTDIR=%{buildroot}%{_bindir} THE_RPM_BUILD_ROOT=%{buildroot}
-lrelease-qt5 MEGASync/MEGASync.pro
-
-%make_build
+    %make_build
+popd
 
 %install
-make install DESTDIR=%{buildroot}%{_bindir}
+pushd src
+    %make_install DESTDIR=%{buildroot}%{_bindir}
+popd
 
 desktop-file-install \
     --add-category="Network" \
     --dir %{buildroot}%{_datadir}/applications \
 %{buildroot}%{_datadir}/applications/%{name}.desktop
 
+#Remove ubuntu specific themes
 rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 
+
 %files
+%license LICENCE.md src/MEGASync/mega/LICENSE
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/mega.png
@@ -101,6 +110,10 @@ rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 %{_datadir}/doc/%{name}
 
 %changelog
+* Mon Apr 22 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-2
+- Correct spec
+- Add license files
+
 * Fri Apr 19 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-1
 - Clean spec for fedora
 
