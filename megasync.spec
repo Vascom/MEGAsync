@@ -52,6 +52,17 @@ transfers.
 Generous:
 Store up to 50 GB for free!
 
+%package -n dolphin-%{name}
+Summary:        Extension for Dolphin to interact with Megasync
+BuildRequires:  cmake(KF5CoreAddons)
+BuildRequires:  cmake(KF5KIO)
+BuildRequires:  kf5-rpm-macros
+BuildRequires:  extra-cmake-modules
+Requires:       %{name}%{?_isa}
+
+%description -n dolphin-%{name}
+%{summary}.
+
 %prep
 %autosetup -n MEGAsync-%{version}.0_Linux
 
@@ -87,6 +98,14 @@ pushd src
     %make_build
 popd
 
+mkdir src/MEGAShellExtDolphin/build
+pushd src/MEGAShellExtDolphin/build
+    rm ../megasync-plugin.moc
+    mv ../CMakeLists_kde5.txt ../CMakeLists.txt
+    %cmake_kf5 ..
+    %make_build
+popd
+
 %install
 pushd src
     %make_install DESTDIR=%{buildroot}%{_bindir}
@@ -100,6 +119,10 @@ desktop-file-install \
 #Remove ubuntu specific themes
 rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 
+pushd src/MEGAShellExtDolphin/build
+    %make_install
+popd
+
 
 %files
 %license LICENCE.md src/MEGASync/mega/LICENSE
@@ -108,6 +131,12 @@ rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 %{_datadir}/icons/hicolor/*/apps/mega.png
 %{_datadir}/icons/hicolor/scalable/status/*.svg
 %{_datadir}/doc/%{name}
+
+%files -n dolphin-%{name}
+%{_kf5_plugindir}/overlayicon
+%{_qt5_plugindir}/megasyncplugin.so
+%{_datadir}/icons/hicolor/*/emblems/mega-dolphin-*.png
+%{_datadir}/kservices5/%{name}-plugin.desktop
 
 %changelog
 * Mon Apr 22 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-2
