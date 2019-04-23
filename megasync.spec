@@ -2,9 +2,10 @@
 
 Name:       megasync
 Version:    4.0.2
-Release:    2%{?dist}
+Release:    3%{?dist}
 Summary:    Easy automated syncing between your computers and your MEGA cloud drive
-License:    BSD
+# MEGAsync is under a proprietary license, except the SDK which is BSD
+License:    Proprietary and BSD
 URL:        https://mega.nz
 Source0:    https://github.com/meganz/MEGAsync/archive/v%{version}.0_Linux.tar.gz
 Source1:    https://github.com/meganz/sdk/archive/v%{sdk_version}.tar.gz
@@ -63,12 +64,31 @@ Requires:       %{name}%{?_isa}
 %description -n dolphin-%{name}
 %{summary}.
 
+%package -n nautilus-%{name}
+Summary:        Extension for Nautilus to interact with Megasync
+BuildRequires:  pkgconfig(libnautilus-extension) >= 2.16.0
+Requires:       nautilus
+Requires:       megasync
+
+%description -n nautilus-%{name}
+%{summary}.
+
+%package -n nemo-%{name}
+Summary:        Extension for Nemo to interact with Megasync
+BuildRequires:  pkgconfig(libnemo-extension)
+Requires:       nemo
+Requires:       megasync
+
+%description -n nemo-%{name}
+%{summary}.
+
 %prep
 %autosetup -n MEGAsync-%{version}.0_Linux
 
 #Move Mega SDK to it's place
 tar -xvf %{SOURCE1} -C src/MEGASync/mega
 mv src/MEGASync/mega/sdk-%{sdk_version}/* src/MEGASync/mega/
+cp src/MEGASync/mega/LICENSE LICENSE-SDK
 
 #Disable all bundling
 sed -i '/-u/d' src/configure
@@ -106,26 +126,54 @@ pushd src/MEGAShellExtDolphin/build
     %make_build
 popd
 
+mkdir src/MEGAShellExtNautilus/build
+pushd src/MEGAShellExtNautilus/build
+    %qmake_qt5 ..
+    %make_build
+popd
+
+mkdir src/MEGAShellExtNemo/build
+pushd src/MEGAShellExtNemo/build
+    %qmake_qt5 ..
+    %make_build
+popd
+
 %install
 pushd src
     %make_install DESTDIR=%{buildroot}%{_bindir}
+
+    desktop-file-install \
+        --add-category="Network" \
+        --dir %{buildroot}%{_datadir}/applications \
+    %{buildroot}%{_datadir}/applications/%{name}.desktop
+
+    #Remove ubuntu specific themes
+    rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 popd
-
-desktop-file-install \
-    --add-category="Network" \
-    --dir %{buildroot}%{_datadir}/applications \
-%{buildroot}%{_datadir}/applications/%{name}.desktop
-
-#Remove ubuntu specific themes
-rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 
 pushd src/MEGAShellExtDolphin/build
     %make_install
 popd
 
+pushd src/MEGAShellExtNautilus/build
+    %make_install
+    mkdir -p %{buildroot}%{_libdir}/nautilus/extensions-3.0
+    install -pm 644 libMEGAShellExtNautilus.so \
+        %{buildroot}%{_libdir}/nautilus/extensions-3.0/libMEGAShellExtNautilus.so
+    rm %{buildroot}%{_datadir}/icons/hicolor/icon-theme.cache
+popd
+
+pushd src/MEGAShellExtNemo/build
+    %make_install
+    mkdir -p %{buildroot}%{_libdir}/nemo/extensions-3.0
+    install -pm 644 libMEGAShellExtNemo.so \
+        %{buildroot}%{_libdir}/nemo/extensions-3.0/libMEGAShellExtNemo.so
+    rm %{buildroot}%{_datadir}/icons/hicolor/icon-theme.cache
+popd
+
 
 %files
-%license LICENCE.md src/MEGASync/mega/LICENSE
+%license LICENCE.md LICENSE-SDK
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/mega.png
@@ -138,7 +186,23 @@ popd
 %{_datadir}/icons/hicolor/*/emblems/mega-dolphin-*.png
 %{_datadir}/kservices5/%{name}-plugin.desktop
 
+%files -n nautilus-%{name}
+%{_libdir}/nautilus/extensions-3.0/libMEGAShellExtNautilus.so
+%exclude %{_datadir}/icons/hicolor/*/emblems/mega-dolphin-*.png
+%exclude %{_datadir}/icons/hicolor/*/emblems/mega-nemo*.png
+%{_datadir}/icons/hicolor/*/*/mega-*.icon
+%{_datadir}/icons/hicolor/*/*/mega-*.png
+
+%files -n nemo-%{name}
+%{_libdir}/nemo/extensions-3.0/libMEGAShellExtNemo.so
+%{_datadir}/icons/hicolor/*/*/mega-nemo*.icon
+%{_datadir}/icons/hicolor/*/*/mega-nemo*.png
+
 %changelog
+* Tue Apr 23 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-3
+- Corrected license
+- Added file manager plugins
+
 * Mon Apr 22 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-2
 - Correct spec
 - Add license files
