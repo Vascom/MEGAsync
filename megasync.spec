@@ -1,5 +1,11 @@
 %global sdk_version 3.4.7
 
+%bcond_without dolphin
+%bcond_without nautilus
+%bcond_without nemo
+
+%global enable_lto 1
+
 Name:       megasync
 Version:    4.0.2
 Release:    3%{?dist}
@@ -53,6 +59,7 @@ transfers.
 Generous:
 Store up to 50 GB for free!
 
+%if %{with dolphin}
 %package -n dolphin-%{name}
 Summary:        Extension for Dolphin to interact with Megasync
 BuildRequires:  cmake(KF5CoreAddons)
@@ -63,24 +70,30 @@ Requires:       %{name}%{?_isa}
 
 %description -n dolphin-%{name}
 %{summary}.
+%endif
 
+%if %{with nautilus}
 %package -n nautilus-%{name}
 Summary:        Extension for Nautilus to interact with Megasync
 BuildRequires:  pkgconfig(libnautilus-extension) >= 2.16.0
-Requires:       nautilus
-Requires:       megasync
+Requires:       nautilus%{?_isa}
+Requires:       %{name}%{?_isa}
 
 %description -n nautilus-%{name}
 %{summary}.
+%endif
 
+%if %{with nemo}
 %package -n nemo-%{name}
 Summary:        Extension for Nemo to interact with Megasync
 BuildRequires:  pkgconfig(libnemo-extension)
-Requires:       nemo
-Requires:       megasync
+Requires:       nemo%{?_isa}
+Requires:       %{name}%{?_isa}
 
 %description -n nemo-%{name}
 %{summary}.
+%endif
+
 
 %prep
 %autosetup -n MEGAsync-%{version}.0_Linux
@@ -97,12 +110,14 @@ sed -i '/qlite_pkg $build_dir $install_dir/d' src/MEGASync/mega/contrib/build_sd
 
 
 %build
-#Enable LTO optimisation and FFMPEG
+#Enable FFMPEG
 echo "CONFIG += link_pkgconfig
-PKGCONFIG += libavcodec
-QMAKE_CXXFLAGS += -flto
-QMAKE_CFLAGS += -flto
+PKGCONFIG += libavcodec" >> src/MEGASync/MEGASync.pro
+#Enable LTO optimisation
+%if %{enable_lto}
+echo "QMAKE_CXXFLAGS += -flto
 QMAKE_LFLAGS_RELEASE += -flto" >> src/MEGASync/MEGASync.pro
+%endif
 
 export DESKTOP_DESTDIR=%{buildroot}%{_prefix}
 
@@ -118,6 +133,7 @@ pushd src
     %make_build
 popd
 
+%if %{with dolphin}
 mkdir src/MEGAShellExtDolphin/build
 pushd src/MEGAShellExtDolphin/build
     rm ../megasync-plugin.moc
@@ -125,18 +141,23 @@ pushd src/MEGAShellExtDolphin/build
     %cmake_kf5 ..
     %make_build
 popd
+%endif
 
+%if %{with nautilus}
 mkdir src/MEGAShellExtNautilus/build
 pushd src/MEGAShellExtNautilus/build
     %qmake_qt5 ..
     %make_build
 popd
+%endif
 
+%if %{with nemo}
 mkdir src/MEGAShellExtNemo/build
 pushd src/MEGAShellExtNemo/build
     %qmake_qt5 ..
     %make_build
 popd
+%endif
 
 %install
 pushd src
@@ -151,26 +172,31 @@ pushd src
     rm -rf %{buildroot}%{_datadir}/icons/ubuntu*
 popd
 
+%if %{with dolphin}
 pushd src/MEGAShellExtDolphin/build
     %make_install
 popd
+%endif
 
+%if %{with nautilus}
 pushd src/MEGAShellExtNautilus/build
     %make_install
     mkdir -p %{buildroot}%{_libdir}/nautilus/extensions-3.0
-    install -pm 644 libMEGAShellExtNautilus.so \
+    install -pm 755 libMEGAShellExtNautilus.so \
         %{buildroot}%{_libdir}/nautilus/extensions-3.0/libMEGAShellExtNautilus.so
     rm %{buildroot}%{_datadir}/icons/hicolor/icon-theme.cache
 popd
+%endif
 
+%if %{with nemo}
 pushd src/MEGAShellExtNemo/build
     %make_install
     mkdir -p %{buildroot}%{_libdir}/nemo/extensions-3.0
-    install -pm 644 libMEGAShellExtNemo.so \
+    install -pm 755 libMEGAShellExtNemo.so \
         %{buildroot}%{_libdir}/nemo/extensions-3.0/libMEGAShellExtNemo.so
     rm %{buildroot}%{_datadir}/icons/hicolor/icon-theme.cache
 popd
-
+%endif
 
 %files
 %license LICENCE.md LICENSE-SDK
@@ -180,23 +206,29 @@ popd
 %{_datadir}/icons/hicolor/scalable/status/*.svg
 %{_datadir}/doc/%{name}
 
+%if %{with dolphin}
 %files -n dolphin-%{name}
 %{_kf5_plugindir}/overlayicon
 %{_qt5_plugindir}/megasyncplugin.so
 %{_datadir}/icons/hicolor/*/emblems/mega-dolphin-*.png
 %{_datadir}/kservices5/%{name}-plugin.desktop
+%endif
 
+%if %{with nautilus}
 %files -n nautilus-%{name}
 %{_libdir}/nautilus/extensions-3.0/libMEGAShellExtNautilus.so
 %exclude %{_datadir}/icons/hicolor/*/emblems/mega-dolphin-*.png
 %exclude %{_datadir}/icons/hicolor/*/emblems/mega-nemo*.png
 %{_datadir}/icons/hicolor/*/*/mega-*.icon
 %{_datadir}/icons/hicolor/*/*/mega-*.png
+%endif
 
+%if %{with nemo}
 %files -n nemo-%{name}
 %{_libdir}/nemo/extensions-3.0/libMEGAShellExtNemo.so
 %{_datadir}/icons/hicolor/*/*/mega-nemo*.icon
 %{_datadir}/icons/hicolor/*/*/mega-nemo*.png
+%endif
 
 %changelog
 * Tue Apr 23 2019 Vasiliy N. Glazov <vascom2@gmail.com> - 4.0.2-3
